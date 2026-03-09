@@ -1,46 +1,27 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../components/sidebar/Sidebar";
 import DashboardHeader from "../../components/dashboard-header/DashboardHeader";
-import { auth } from "../../firebase/firebase";
-import { onAuthStateChanged, signOut } from "firebase/auth";
-import {
-  User,
-  Shield,
-  Info,
-  LogOut,
-} from "lucide-react";
+import { User, Shield, Info, LogOut } from "lucide-react";
 import "./Settings.css";
 
 function Settings() {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  const [displayName, setDisplayName] = useState("");
+  const [displayName, setDisplayName] = useState("User");
   const [savedMessage, setSavedMessage] = useState("");
 
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      if (currentUser) {
-        setDisplayName(currentUser.displayName || currentUser.email?.split("@")[0] || "User");
-      } else {
-        setDisplayName("User");
-      }
-    });
-    return () => unsubscribe();
-  }, []);
-
-  const handleSignOut = async () => {
+  const handleSignOut = () => {
+    // Clear backend auth token if present and return to login
     try {
-      await signOut(auth);
-      navigate("/login");
-    } catch (err) {
-      console.error("Sign out failed:", err);
+      localStorage.removeItem("access_token");
+    } catch {
+      // ignore storage issues
     }
+    navigate("/login");
   };
 
   const handleSaveProfile = () => {
-    // In a real app, would update user profile in Firebase/backend
+    // In a real app, this would call the backend to update the profile
     setSavedMessage("Profile saved!");
     setTimeout(() => setSavedMessage(""), 2000);
   };
@@ -62,13 +43,9 @@ function Settings() {
             </div>
             <div className="settings-section-body">
               <div className="profile-avatar">
-                {user?.photoURL ? (
-                  <img src={user.photoURL} alt="Profile" />
-                ) : (
-                  <div className="avatar-placeholder">
-                    {displayName.charAt(0).toUpperCase()}
-                  </div>
-                )}
+                <div className="avatar-placeholder">
+                  {displayName.charAt(0).toUpperCase()}
+                </div>
               </div>
               <div className="settings-form">
                 <div className="form-group">
@@ -78,23 +55,11 @@ function Settings() {
                     value={displayName}
                     onChange={(e) => setDisplayName(e.target.value)}
                     placeholder="Your name"
-                    disabled={!user}
                   />
                 </div>
-                <div className="form-group">
-                  <label>Email</label>
-                  <input
-                    type="email"
-                    value={user?.email || "Not signed in"}
-                    disabled
-                    className="read-only"
-                  />
-                </div>
-                {user && (
-                  <button className="btn-primary" onClick={handleSaveProfile}>
-                    Save changes
-                  </button>
-                )}
+                <button className="btn-primary" onClick={handleSaveProfile}>
+                  Save changes
+                </button>
                 {savedMessage && (
                   <span className="saved-message">{savedMessage}</span>
                 )}
