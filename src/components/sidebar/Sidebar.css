@@ -1,0 +1,148 @@
+.sidebar {
+  width: 20%;
+  min-width: 250px;
+  background-color: #1A1A1A;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  overflow-y: auto;
+}
+
+.sidebar-content {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.sidebar-title {
+  color: #FFFFFF;
+  font-size: 24px;
+  font-weight: bold;
+  margin: 0;
+}
+
+/* Profile Section */
+.profile-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.profile-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.profile-name {
+  color: #FFFFFF;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.profile-settings {
+  color: #B0B0B0;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.profile-settings:hover {
+  text-decoration: underline;
+  color: #FFFFFF;
+}
+
+/* Agent AI Button */
+.agent-ai-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #FFFFFF;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.agent-ai-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.agent-ai-btn span {
+  display: flex;
+  align-items: center;
+}
+
+/* Navigation */
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  color: #FFFFFF;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.nav-item:hover {
+  background-color: #2D2D2D;
+}
+
+.nav-item.active {
+  background-color: #2D2D2D;
+  color: #FFFFFF;
+}
+
+.nav-item span {
+  font-size: 14px;
+}
+
+/* Folders Section */
+.folders-section {
+  margin-top: 8px;
+}
+
+.folders-title {
+  color: #B0B0B0;
+  font-size: 12px;
+  font-weight: 500;
+  margin: 0 0 12px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.folder-item {
+  color: #FFFFFF;
+  font-size: 14px;
+  padding: 8px 16px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.folder-item:hover {
+  background-color: #2D2D2D;
+}
+

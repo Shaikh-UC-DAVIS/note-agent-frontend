@@ -1,0 +1,99 @@
+.dashboard-container {
+  display: flex;
+  min-height: 100vh;
+  background-color: #242424;
+  color: #FFFFFF;
+}
+
+.dashboard-main {
+  margin-left: 20%;
+  width: 80%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-content {
+  flex: 1;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.content-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.content-section:first-child {
+  /* Weekly Summary stays at top */
+  flex-shrink: 0;
+}
+
+.content-section:last-child {
+  /* Task Review positioned at ~50% from header to bottom */
+  margin-top: auto;
+  margin-bottom: auto;
+  flex-shrink: 0;
+}
+
+.section-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #FFFFFF;
+  margin: 0;
+}
+
+.section-content {
+  background-color: #1A1A1A;
+  border-radius: 8px;
+  padding: 24px;
+  min-height: 200px;
+  max-height: 400px;
+}
+
+.section-content.scrollable {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar styling */
+.section-content.scrollable::-webkit-scrollbar {
+  width: 8px;
+}
+
+.section-content.scrollable::-webkit-scrollbar-track {
+  background: #1A1A1A;
+  border-radius: 4px;
+}
+
+.section-content.scrollable::-webkit-scrollbar-thumb {
+  background: #4A4A4A;
+  border-radius: 4px;
+}
+
+.section-content.scrollable::-webkit-scrollbar-thumb:hover {
+  background: #5A5A5A;
+}
+
+.empty-state {
+  color: #B0B0B0;
+  font-style: italic;
+  font-size: 14px;
+  margin: 0;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .dashboard-main {
+    margin-left: 0;
+    width: 100%;
+  }
+  
+  .dashboard-content {
+    padding: 16px;
+  }
+}
+
