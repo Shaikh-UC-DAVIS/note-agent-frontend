@@ -22,14 +22,20 @@ function NoteEditorPage() {
 
   useEffect(() => {
     let cancelled = false;
+
     async function load() {
       setLoading(true);
       setError("");
+
       try {
         const note = await fetchNote(workspaceId, noteId);
         if (cancelled) return;
-        setTitle(note.title || "");
-        setBody(note.raw_text || "");
+
+        const noteTitle = note.title || "";
+        const noteBody = note.raw_text || "";
+
+        setTitle(noteTitle);
+        setBody(noteBody);
         setDirty(false);
         setSaveStatus("saved");
         loadedOnceRef.current = true;
@@ -42,24 +48,39 @@ function NoteEditorPage() {
         }
       }
     }
+
     load();
+
     return () => {
       cancelled = true;
     };
   }, [workspaceId, noteId]);
 
+  useEffect(() => {
+    if (!editorRef.current) return;
+    if (loading) return;
+
+    const currentHtml = editorRef.current.innerHTML;
+    if (currentHtml !== body) {
+      editorRef.current.innerHTML = body || "";
+    }
+  }, [body, loading]);
+
   const saveNow = async () => {
     try {
       setSaving(true);
       setSaveStatus("saving");
+
       const html =
         editorRef.current?.innerHTML != null
           ? editorRef.current.innerHTML
           : body;
+
       await updateNote(workspaceId, noteId, {
         title,
         raw_text: html,
       });
+
       setDirty(false);
       setSaveStatus("saved");
     } catch (err) {
@@ -75,20 +96,28 @@ function NoteEditorPage() {
     if (loading) return;
     if (!loadedOnceRef.current) return;
     if (!dirty) return;
+
     const t = window.setTimeout(() => {
       saveNow();
     }, 700);
+
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [title, body, dirty, loading]);
 
   const exec = (command, value = null) => {
-    // Use built-in browser rich text commands for visual formatting
     if (typeof document === "undefined") return;
+
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) return;
+
     document.execCommand(command, false, value);
     editorRef.current && editorRef.current.focus();
+
+    if (editorRef.current) {
+      setBody(editorRef.current.innerHTML);
+      setDirty(true);
+    }
   };
 
   const applyInlineFormat = (type) => {
@@ -112,7 +141,6 @@ function NoteEditorPage() {
               type="button"
               className="notes-back-button"
               onClick={async () => {
-                // best-effort flush before leaving
                 if (dirty && !saving) {
                   await saveNow();
                 }
@@ -121,6 +149,7 @@ function NoteEditorPage() {
             >
               ← Notes
             </button>
+
             <div className="note-editor-header-right">
               <span className="note-editor-save-indicator">
                 {saveStatus === "saving"
@@ -135,6 +164,7 @@ function NoteEditorPage() {
           </div>
 
           {error && <div className="notes-error">{error}</div>}
+
           {loading ? (
             <div className="notes-loading">Loading note…</div>
           ) : (
@@ -149,6 +179,7 @@ function NoteEditorPage() {
                   setDirty(true);
                 }}
               />
+
               <div className="notes-editor-toolbar">
                 <div className="notes-editor-toolbar-group">
                   <button
@@ -160,6 +191,7 @@ function NoteEditorPage() {
                   >
                     B
                   </button>
+
                   <button
                     type="button"
                     onMouseDown={(e) => {
@@ -169,6 +201,7 @@ function NoteEditorPage() {
                   >
                     I
                   </button>
+
                   <button
                     type="button"
                     onMouseDown={(e) => {
@@ -178,6 +211,7 @@ function NoteEditorPage() {
                   >
                     U
                   </button>
+
                   <button
                     type="button"
                     onMouseDown={(e) => {
@@ -187,6 +221,7 @@ function NoteEditorPage() {
                   >
                     • List
                   </button>
+
                   <button
                     type="button"
                     onMouseDown={(e) => {
@@ -197,6 +232,7 @@ function NoteEditorPage() {
                     1. List
                   </button>
                 </div>
+
                 <div className="notes-editor-toolbar-group">
                   <label className="notes-editor-fontsize-label">
                     Text size
@@ -212,6 +248,7 @@ function NoteEditorPage() {
                   </label>
                 </div>
               </div>
+
               <div
                 ref={editorRef}
                 className="notes-editor-body"
@@ -225,6 +262,9 @@ function NoteEditorPage() {
                       : fontSize === "large"
                       ? 16
                       : 14,
+                  direction: "ltr",
+                  textAlign: "left",
+                  unicodeBidi: "plaintext",
                 }}
                 onInput={() => {
                   if (editorRef.current) {
@@ -232,7 +272,6 @@ function NoteEditorPage() {
                     setDirty(true);
                   }
                 }}
-                dangerouslySetInnerHTML={{ __html: body }}
               />
             </div>
           )}
@@ -243,4 +282,3 @@ function NoteEditorPage() {
 }
 
 export default NoteEditorPage;
-

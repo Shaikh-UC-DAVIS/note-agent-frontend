@@ -390,3 +390,7 @@
   flex-direction: column;
 }
 
+.notes-editor-body {
+  direction: ltr;
+  text-align: left;
+}
