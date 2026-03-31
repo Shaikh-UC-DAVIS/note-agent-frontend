@@ -1,15 +1,29 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Sidebar from "../../components/sidebar/Sidebar";
 import DashboardHeader from "../../components/dashboard-header/DashboardHeader";
+import {
+  fetchTasks,
+  createTask,
+  updateTask,
+  deleteTask as deleteTaskApi,
+  fetchWorkspaces,
+} from "../../api/client";
 import "./Calendar.css";
 
 function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState("month"); // "month" or "week"
+  const [view, setView] = useState("month");
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [tasks, setTasks] = useState([]); // JSON structure: [{ id, title, date, completed }]
+  const [tasks, setTasks] = useState([]);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [showAddTask, setShowAddTask] = useState(false);
+  const [tasksLoading, setTasksLoading] = useState(false);
+  const [tasksError, setTasksError] = useState("");
+  const [workspaceId, setWorkspaceId] = useState(
+    localStorage.getItem("selected_workspace_id") ||
+      localStorage.getItem("workspaceId") ||
+      null
+  );
 
   const getDaysInMonth = (date) => {
     const year = date.getFullYear();
@@ -59,8 +73,7 @@ function Calendar() {
     setSelectedDate(today);
   };
 
-  // Get the week for a given date
-  const getWeekForDate = (date) => {
+  const getWeekForDate = useCallback((date) => {
     const week = [];
     const startOfWeek = new Date(date);
     const day = startOfWeek.getDay();
@@ -73,16 +86,17 @@ function Calendar() {
       week.push(currentDay);
     }
     return week;
-  };
+  }, []);
 
-  // Check if two dates are in the same week
-  const isSameWeek = (date1, date2) => {
-    const week1 = getWeekForDate(date1);
-    const week2 = getWeekForDate(date2);
-    return week1[0].toDateString() === week2[0].toDateString();
-  };
+  const isSameWeek = useCallback(
+    (date1, date2) => {
+      const week1 = getWeekForDate(date1);
+      const week2 = getWeekForDate(date2);
+      return week1[0].toDateString() === week2[0].toDateString();
+    },
+    [getWeekForDate]
+  );
 
-  // Format date to YYYY-MM-DD for comparison
   const formatDateKey = (date) => {
     const d = new Date(date);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
@@ -91,7 +105,58 @@ function Calendar() {
     )}-${String(d.getDate()).padStart(2, "0")}`;
   };
 
-  // Get tasks for the selected week
+  const normalizeTask = (task) => {
+    return {
+      id: task.id,
+      title: task.title,
+      date: task.due_date || task.date,
+      completed: task.status === "done" || task.completed === true,
+      raw: task,
+    };
+  };
+
+  useEffect(() => {
+    async function ensureWorkspace() {
+      if (workspaceId) return;
+
+      try {
+        const workspaces = await fetchWorkspaces();
+        if (workspaces?.length) {
+          const firstWorkspaceId = workspaces[0].id;
+          setWorkspaceId(firstWorkspaceId);
+          localStorage.setItem("selected_workspace_id", firstWorkspaceId);
+          setTasksError("");
+        } else {
+          setTasksError("No workspace found. Please create a workspace first.");
+        }
+      } catch (err) {
+        console.error("Failed to load workspaces", err);
+        setTasksError(err.message || "Failed to load workspaces");
+      }
+    }
+
+    ensureWorkspace();
+  }, [workspaceId]);
+
+  const loadTasks = useCallback(async () => {
+    if (!workspaceId) {
+      setTasks([]);
+      return;
+    }
+
+    try {
+      setTasksLoading(true);
+      setTasksError("");
+      const data = await fetchTasks({ workspaceId });
+      setTasks((Array.isArray(data) ? data : []).map(normalizeTask));
+    } catch (err) {
+      console.error("Failed to load tasks", err);
+      setTasksError(err.message || "Failed to load tasks");
+    } finally {
+      setTasksLoading(false);
+    }
+  }, [workspaceId]);
+
   const getTasksForWeek = () => {
     const selectedWeek = getWeekForDate(selectedDate);
     const weekStart = selectedWeek[0];
@@ -103,57 +168,85 @@ function Calendar() {
     });
   };
 
-  // Handle day click
   const handleDayClick = (date) => {
     setSelectedDate(date);
-    // If in month view, switch to week view when clicking a day
     if (view === "month") {
       setView("week");
       setCurrentDate(date);
     }
   };
 
-  // Add new task
-  const handleAddTask = () => {
-    if (newTaskTitle.trim()) {
-      const newTask = {
-        id: Date.now(),
+  const handleAddTask = async () => {
+    if (!newTaskTitle.trim()) {
+      setTasksError("Please enter a task title.");
+      return;
+    }
+
+    if (!workspaceId) {
+      setTasksError(
+        "No workspace found. Please create or select a workspace first."
+      );
+      return;
+    }
+
+    try {
+      setTasksError("");
+
+      await createTask({
+        workspace_id: workspaceId,
         title: newTaskTitle.trim(),
-        date: formatDateKey(selectedDate),
-        completed: false,
-      };
-      setTasks([...tasks, newTask]);
+        description: null,
+        status: "todo",
+        due_date: formatDateKey(selectedDate),
+        note_id: null,
+      });
+
       setNewTaskTitle("");
       setShowAddTask(false);
+      await loadTasks();
+    } catch (err) {
+      console.error("Failed to create task", err);
+      setTasksError(err.message || "Failed to create task");
     }
   };
 
-  // Toggle task completion
-  const toggleTask = (taskId) => {
-    setTasks(
-      tasks.map((task) =>
-        task.id === taskId ? { ...task, completed: !task.completed } : task
-      )
-    );
+  const toggleTask = async (taskId) => {
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return;
+
+    try {
+      await updateTask(taskId, {
+        status: task.completed ? "todo" : "done",
+      });
+      await loadTasks();
+    } catch (err) {
+      console.error("Failed to update task", err);
+      setTasksError(err.message || "Failed to update task");
+    }
   };
 
-  // Delete task
-  const deleteTask = (taskId) => {
-    setTasks(tasks.filter((task) => task.id !== taskId));
+  const deleteTask = async (taskId) => {
+    try {
+      await deleteTaskApi(taskId);
+      await loadTasks();
+    } catch (err) {
+      console.error("Failed to delete task", err);
+      setTasksError(err.message || "Failed to delete task");
+    }
   };
 
-  // Update selected date when navigating weeks
+  useEffect(() => {
+    loadTasks();
+  }, [loadTasks]);
+
   useEffect(() => {
     if (view === "week") {
       const currentWeek = getWeekForDate(currentDate);
-      const selectedWeek = getWeekForDate(selectedDate);
-
-      // If selected date is not in current week, update selected date to first day of current week
       if (!isSameWeek(currentDate, selectedDate)) {
         setSelectedDate(currentWeek[0]);
       }
     }
-  }, [currentDate, view]);
+  }, [currentDate, view, selectedDate, getWeekForDate, isSameWeek]);
 
   const weekTasks = getTasksForWeek();
 
@@ -208,6 +301,7 @@ function Calendar() {
                     →
                   </button>
                 </div>
+
                 <h2 className="calendar-title">
                   {view === "month"
                     ? `${monthNames[month]} ${year}`
@@ -222,15 +316,15 @@ function Calendar() {
                           { month: "short" }
                         );
                         const endDay = weekDays[6].getDate();
-                        const year = weekDays[6].getFullYear();
+                        const endYear = weekDays[6].getFullYear();
 
                         if (startMonth === endMonth) {
-                          return `${startMonth} ${startDay} - ${endDay}, ${year}`;
-                        } else {
-                          return `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${year}`;
+                          return `${startMonth} ${startDay} - ${endDay}, ${endYear}`;
                         }
+                        return `${startMonth} ${startDay} - ${endMonth} ${endDay}, ${endYear}`;
                       })()}
                 </h2>
+
                 <div className="view-toggle">
                   <button
                     className={`view-button ${view === "week" ? "active" : ""}`}
@@ -249,6 +343,8 @@ function Calendar() {
                 </div>
               </div>
 
+              {tasksError && <div className="notes-error">{tasksError}</div>}
+
               <div className="calendar-grid">
                 {view === "month" ? (
                   <>
@@ -259,15 +355,17 @@ function Calendar() {
                         </div>
                       ))}
                     </div>
+
                     <div className="calendar-days">
                       {Array.from({ length: startingDayOfWeek }).map(
                         (_, index) => (
                           <div
                             key={`empty-${index}`}
                             className="calendar-day empty"
-                          ></div>
+                          />
                         )
                       )}
+
                       {Array.from({ length: daysInMonth }).map((_, index) => {
                         const day = index + 1;
                         const dayDate = new Date(year, month, day);
@@ -278,9 +376,11 @@ function Calendar() {
                         const isSelected =
                           formatDateKey(dayDate) ===
                           formatDateKey(selectedDate);
+
                         const dayTasks = tasks.filter(
                           (task) => task.date === formatDateKey(dayDate)
                         );
+
                         return (
                           <div
                             key={day}
@@ -310,15 +410,18 @@ function Calendar() {
                         </div>
                       ))}
                     </div>
+
                     <div className="calendar-week">
                       {weekDays.map((day, index) => {
                         const isToday =
                           day.toDateString() === new Date().toDateString();
                         const isSelected =
                           formatDateKey(day) === formatDateKey(selectedDate);
+
                         const dayTasks = tasks.filter(
                           (task) => task.date === formatDateKey(day)
                         );
+
                         return (
                           <div
                             key={index}
@@ -368,7 +471,7 @@ function Calendar() {
                     placeholder="Enter task title..."
                     value={newTaskTitle}
                     onChange={(e) => setNewTaskTitle(e.target.value)}
-                    onKeyPress={(e) => {
+                    onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         handleAddTask();
                       }
@@ -387,6 +490,7 @@ function Calendar() {
                       onClick={() => {
                         setShowAddTask(false);
                         setNewTaskTitle("");
+                        setTasksError("");
                       }}
                     >
                       Cancel
@@ -396,7 +500,9 @@ function Calendar() {
               )}
 
               <div className="tasks-content">
-                {weekTasks.length === 0 ? (
+                {tasksLoading ? (
+                  <p className="no-tasks">Loading tasks...</p>
+                ) : weekTasks.length === 0 ? (
                   <p className="no-tasks">No tasks this week</p>
                 ) : (
                   <div className="tasks-list">
