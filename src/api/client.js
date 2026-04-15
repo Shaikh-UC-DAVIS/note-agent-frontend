@@ -142,4 +142,57 @@ export async function deleteNote(workspaceId, noteId) {
   });
 }
 
+export async function fetchTasks({ workspaceId, startDate, endDate } = {}) {
+  const params = new URLSearchParams();
 
+  if (workspaceId) {
+    params.append("workspace_id", workspaceId);
+  }
+  if (startDate) {
+    params.append("start_date", startDate);
+  }
+  if (endDate) {
+    params.append("end_date", endDate);
+  }
+
+  const query = params.toString();
+  return apiRequest(`/tasks${query ? `?${query}` : ""}`, {
+    method: "GET",
+  });
+}
+
+export async function createTask({
+  workspace_id,
+  title,
+  description = null,
+  status = "todo",
+  due_date = null,
+  user_id = null,
+  note_id = null,
+}) {
+  return apiRequest("/tasks", {
+    method: "POST",
+    body: JSON.stringify({
+      workspace_id,
+      title,
+      description,
+      status,
+      due_date,
+      user_id,
+      note_id,
+    }),
+  });
+}
+
+export async function updateTask(taskId, payload) {
+  return apiRequest(`/tasks/${taskId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteTask(taskId) {
+  return apiRequest(`/tasks/${taskId}`, {
+    method: "DELETE",
+  });
+}
