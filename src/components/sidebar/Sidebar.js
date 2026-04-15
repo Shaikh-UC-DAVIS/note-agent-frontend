@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './Sidebar.css';
-import { Home, FileText, Calendar } from 'lucide-react';
+import { Home, FileText, Calendar, Upload } from 'lucide-react';
 import { fetchWorkspaces } from '../../api/client';
 
 const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [workspaces, setWorkspaces] = useState([]);
+  const [selectedPdfName, setSelectedPdfName] = useState('');
+  const [pdfError, setPdfError] = useState('');
+  const [uploadState, setUploadState] = useState('idle'); // idle | uploading | processing | ready | error
 
   const isActive = (path) => {
     if (path === '/dashboard') {
@@ -32,6 +35,35 @@ const Sidebar = () => {
       cancelled = true;
     };
   }, []);
+
+  const handlePdfSelected = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      setPdfError('Only PDF files are supported.');
+      setSelectedPdfName('');
+      setUploadState('error');
+      return;
+    }
+
+    setPdfError('');
+    setSelectedPdfName(file.name);
+    setUploadState('uploading');
+
+    // Temporary visual state flow until backend upload + ML processing API is wired.
+    window.setTimeout(() => setUploadState('processing'), 800);
+    window.setTimeout(() => setUploadState('ready'), 2600);
+  };
+
+  const getUploadStatusLabel = () => {
+    if (!selectedPdfName && uploadState === 'idle') return 'No file selected';
+    if (uploadState === 'uploading') return 'Uploading PDF...';
+    if (uploadState === 'processing') return 'Processing with ML...';
+    if (uploadState === 'ready') return 'Ready for summary and insights';
+    if (uploadState === 'error') return 'Upload failed';
+    return 'Waiting for upload';
+  };
 
   return (
     <div className="sidebar">
@@ -60,6 +92,34 @@ const Sidebar = () => {
         >
           <span>Agent AI</span>
         </button>
+
+        <div className="upload-section">
+          <h3 className="upload-title">Upload PDF</h3>
+          <label
+            className={`upload-pdf-btn ${uploadState === 'uploading' || uploadState === 'processing' ? 'is-busy' : ''}`}
+          >
+            <Upload size={16} />
+            <span>Choose PDF</span>
+            <input
+              type="file"
+              accept="application/pdf,.pdf"
+              onChange={handlePdfSelected}
+              disabled={uploadState === 'uploading' || uploadState === 'processing'}
+            />
+          </label>
+          {selectedPdfName && (
+            <div className="upload-file-name" title={selectedPdfName}>
+              {selectedPdfName}
+            </div>
+          )}
+          <div className={`upload-status upload-status-${uploadState}`}>
+            {(uploadState === 'uploading' || uploadState === 'processing') && (
+              <span className="upload-status-dot" />
+            )}
+            <span>{getUploadStatusLabel()}</span>
+          </div>
+          {pdfError && <div className="upload-error">{pdfError}</div>}
+        </div>
 
         {/* Navigation Links */}
         <nav className="sidebar-nav">
