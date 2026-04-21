@@ -142,6 +142,12 @@ export async function deleteNote(workspaceId, noteId) {
   });
 }
 
+export async function fetchNoteInsights(workspaceId, noteId) {
+  return apiRequest(`/workspaces/${workspaceId}/notes/${noteId}/insights`, {
+    method: "GET",
+  });
+}
+
 export async function fetchTasks({ workspaceId, startDate, endDate } = {}) {
   const params = new URLSearchParams();
 

@@ -147,12 +147,51 @@
   position: relative;
 }
 
+.notes-card-workspace {
+  background: linear-gradient(180deg, rgba(79, 70, 229, 0.16), rgba(26, 26, 26, 0.9));
+  border-color: rgba(129, 140, 248, 0.38);
+  padding: 18px 16px;
+  min-height: 84px;
+}
+
+.notes-card-workspace .notes-card-icon {
+  background: rgba(55, 48, 163, 0.45);
+  color: #c7d2fe;
+}
+
+.notes-card-workspace .notes-card-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.notes-card-workspace .notes-card-subtitle {
+  color: #c4b5fd;
+  letter-spacing: 0.2px;
+}
+
+.notes-card-note {
+  background: #1a1a1a;
+}
+
 .notes-card:hover {
   border-color: #4f46e5;
 }
 
 .notes-card-active {
   border-color: #4f46e5;
+}
+
+.notes-card-selected {
+  border-color: rgba(167, 139, 250, 0.85);
+  background: rgba(139, 92, 246, 0.22);
+  box-shadow:
+    0 0 0 1px rgba(139, 92, 246, 0.35) inset,
+    0 4px 14px rgba(91, 33, 182, 0.18);
+}
+
+.notes-card-selected .notes-card-icon {
+  background: rgba(91, 33, 182, 0.35);
+  color: #ede9fe;
 }
 
 .notes-card-icon {
@@ -363,27 +402,6 @@
   align-items: center;
 }
 
-.notes-card-select {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 18px;
-  height: 18px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 6px;
-}
-
-.notes-card-select input {
-  width: 14px;
-  height: 14px;
-  margin: 0;
-  accent-color: #9ca3af;
-}
-
 .note-editor-main {
   flex: 1;
   display: flex;
@@ -393,4 +411,179 @@
 .notes-editor-body {
   direction: ltr;
   text-align: left;
+}
+
+.note-ml-panel {
+  margin-top: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.note-ml-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.note-ml-header h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.note-ml-status {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  border-radius: 999px;
+  padding: 4px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #d1d5db;
+}
+
+.note-ml-status-ready {
+  color: #86efac;
+  border-color: rgba(134, 239, 172, 0.5);
+}
+
+.note-ml-status-error {
+  color: #fca5a5;
+  border-color: rgba(252, 165, 165, 0.5);
+}
+
+.note-ml-steps {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.note-ml-step {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.note-ml-step-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #6b7280;
+}
+
+.note-ml-step-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: #9ca3af;
+}
+
+.note-ml-step-done .note-ml-step-dot {
+  background: #86efac;
+}
+
+.note-ml-step-done .note-ml-step-label {
+  color: #bbf7d0;
+}
+
+.note-ml-step-active {
+  border-color: rgba(147, 197, 253, 0.5);
+  background: rgba(147, 197, 253, 0.08);
+}
+
+.note-ml-step-active .note-ml-step-dot {
+  background: #93c5fd;
+}
+
+.note-ml-step-active .note-ml-step-label {
+  color: #bfdbfe;
+}
+
+.note-ml-step-error {
+  grid-column: 1 / -1;
+  border-color: rgba(252, 165, 165, 0.5);
+  background: rgba(252, 165, 165, 0.08);
+}
+
+.note-ml-step-error .note-ml-step-dot {
+  background: #fca5a5;
+}
+
+.note-ml-step-error .note-ml-step-label {
+  color: #fecaca;
+}
+
+.note-ml-progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.note-ml-progress-track {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.note-ml-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #60a5fa, #93c5fd);
+  transition: width 0.45s ease;
+}
+
+.note-ml-progress-fill.is-processing {
+  animation: progressGlow 1.2s ease-in-out infinite;
+}
+
+.note-ml-progress-fill.is-error {
+  background: linear-gradient(90deg, #f87171, #fca5a5);
+  animation: none;
+}
+
+.note-ml-progress-text {
+  font-size: 12px;
+  color: #9ca3af;
+  min-width: 74px;
+  text-align: right;
+}
+
+@keyframes progressGlow {
+  0% { filter: brightness(1); }
+  50% { filter: brightness(1.22); }
+  100% { filter: brightness(1); }
+}
+
+.note-ml-content {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.note-ml-column h4 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.note-ml-item {
+  font-size: 12px;
+  color: #e5e7eb;
+  margin-bottom: 6px;
+  line-height: 1.35;
+}
+
+.note-ml-empty {
+  margin: 0;
+  font-size: 12px;
+  color: #6b7280;
 }

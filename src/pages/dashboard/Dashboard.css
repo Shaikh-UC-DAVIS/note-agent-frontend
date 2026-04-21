@@ -46,6 +46,12 @@
   margin: 0;
 }
 
+.section-subtitle {
+  margin: -8px 0 0;
+  color: #9ca3af;
+  font-size: 13px;
+}
+
 .section-content {
   background-color: #1A1A1A;
   border-radius: 8px;
@@ -83,6 +89,68 @@
   font-style: italic;
   font-size: 14px;
   margin: 0;
+}
+
+.weekly-summary-list {
+  display: grid;
+  gap: 14px;
+}
+
+.weekly-summary-note {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.weekly-summary-note-title {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: #ddd6fe;
+}
+
+.weekly-summary-bullets {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+  color: #e5e7eb;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.weekly-task-list {
+  display: grid;
+  gap: 10px;
+}
+
+.weekly-task-item {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.weekly-task-title {
+  font-size: 14px;
+  color: #e5e7eb;
+  margin-bottom: 6px;
+}
+
+.weekly-task-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.weekly-task-chip {
+  border: 1px solid rgba(167, 139, 250, 0.5);
+  color: #ddd6fe;
+  border-radius: 999px;
+  padding: 2px 8px;
+  text-transform: capitalize;
 }
 
 /* Responsive adjustments */

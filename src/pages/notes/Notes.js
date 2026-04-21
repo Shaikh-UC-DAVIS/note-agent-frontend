@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import Sidebar from "../../components/sidebar/Sidebar";
 import DashboardHeader from "../../components/dashboard-header/DashboardHeader";
@@ -16,6 +16,7 @@ function Notes() {
   const location = useLocation();
   const navigate = useNavigate();
   const locationWorkspaceId = location.state?.workspaceId || null;
+  const locationSearchQuery = location.state?.searchQuery || "";
   const [workspaces, setWorkspaces] = useState([]);
   const [workspacesLoading, setWorkspacesLoading] = useState(true);
   const [workspacesError, setWorkspacesError] = useState("");
@@ -30,6 +31,8 @@ function Notes() {
   const [notes, setNotes] = useState([]);
   const [notesLoading, setNotesLoading] = useState(false);
   const [notesError, setNotesError] = useState("");
+  const [searchQuery, setSearchQuery] = useState(locationSearchQuery);
+  const [allWorkspaceNotes, setAllWorkspaceNotes] = useState([]);
 
   const [selectedNoteId, setSelectedNoteId] = useState(null);
   const [selectedNoteIds, setSelectedNoteIds] = useState(() => new Set());
@@ -62,6 +65,9 @@ function Notes() {
 
   // Respond to workspace selection coming from navigation state
   useEffect(() => {
+    if (locationSearchQuery) {
+      setSearchQuery(locationSearchQuery);
+    }
     if (locationWorkspaceId) {
       setSelectedWorkspaceId(locationWorkspaceId);
       setSelectedNoteId(null);
@@ -73,12 +79,13 @@ function Notes() {
       setSelectionMode(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locationWorkspaceId]);
+  }, [locationWorkspaceId, locationSearchQuery]);
 
   // Load notes when workspace changes
   useEffect(() => {
     if (!selectedWorkspaceId) {
       setNotes([]);
+      setSearchQuery("");
       setSelectedNoteId(null);
       setSelectedNoteIds(new Set());
       setSelectionMode(false);
@@ -92,6 +99,7 @@ function Notes() {
         const data = await fetchNotes(selectedWorkspaceId);
         if (cancelled) return;
         setNotes(data || []);
+        setSearchQuery("");
         setSelectedNoteId(null);
         setSelectedNoteIds(new Set());
         setSelectionMode(false);
@@ -109,6 +117,35 @@ function Notes() {
       cancelled = true;
     };
   }, [selectedWorkspaceId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadAllWorkspaceNotes() {
+      try {
+        if (!workspaces.length) {
+          if (!cancelled) setAllWorkspaceNotes([]);
+          return;
+        }
+        const buckets = await Promise.all(
+          workspaces.map(async (ws) => {
+            const wsNotes = await fetchNotes(ws.id, { offset: 0, limit: 200 });
+            return (wsNotes || []).map((note) => ({
+              ...note,
+              workspaceId: ws.id,
+              workspaceName: ws.name || "Workspace",
+            }));
+          })
+        );
+        if (!cancelled) setAllWorkspaceNotes(buckets.flat());
+      } catch {
+        if (!cancelled) setAllWorkspaceNotes([]);
+      }
+    }
+    loadAllWorkspaceNotes();
+    return () => {
+      cancelled = true;
+    };
+  }, [workspaces]);
 
   const handleCreateWorkspace = async () => {
     const name = newWorkspaceName.trim();
@@ -183,7 +220,7 @@ function Notes() {
   };
 
   const handleSelectAllNotes = () => {
-    setSelectedNoteIds(new Set(notes.map((n) => n.id)));
+    setSelectedNoteIds(new Set(filteredNotes.map((n) => n.id)));
   };
 
   const handleClearSelectedNotes = () => {
@@ -191,6 +228,53 @@ function Notes() {
   };
 
   const isWorkspaceView = !selectedWorkspaceId;
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+  const searchedNotes = useMemo(() => {
+    if (!normalizedSearch) return [];
+    return allWorkspaceNotes.filter((note) => {
+      const title = (note.title || "").toLowerCase();
+      const body = (note.raw_text || "").replace(/<[^>]+>/g, " ").toLowerCase();
+      return title.includes(normalizedSearch) || body.includes(normalizedSearch);
+    });
+  }, [allWorkspaceNotes, normalizedSearch]);
+
+  const filteredNotes = useMemo(() => {
+    if (normalizedSearch) return searchedNotes;
+    return notes;
+  }, [normalizedSearch, searchedNotes, notes]);
+
+  const searchSuggestions = useMemo(() => {
+    if (!normalizedSearch) return [];
+    return allWorkspaceNotes
+      .map((note) => {
+        const title = note.title || "Untitled";
+        const bodyText = (note.raw_text || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+        const titleLower = title.toLowerCase();
+        const bodyLower = bodyText.toLowerCase();
+
+        if (!titleLower.includes(normalizedSearch) && !bodyLower.includes(normalizedSearch)) {
+          return null;
+        }
+
+        let preview = "";
+        const bodyIdx = bodyLower.indexOf(normalizedSearch);
+        if (bodyIdx >= 0) {
+          const start = Math.max(0, bodyIdx - 35);
+          const end = Math.min(bodyText.length, bodyIdx + normalizedSearch.length + 55);
+          preview = `${start > 0 ? "..." : ""}${bodyText.slice(start, end)}${end < bodyText.length ? "..." : ""}`;
+        }
+
+        return { id: `${note.workspaceId}:${note.id}`, title, preview, note };
+      })
+      .filter(Boolean)
+      .slice(0, 6);
+  }, [allWorkspaceNotes, normalizedSearch]);
+
+  useEffect(() => {
+    if (!normalizedSearch) return;
+    setSelectionMode(false);
+    setSelectedNoteIds(new Set());
+  }, [normalizedSearch]);
   const currentWorkspace = workspaces.find(
     (ws) => ws.id === selectedWorkspaceId
   );
@@ -199,7 +283,16 @@ function Notes() {
     <div className="dashboard-container">
       <Sidebar />
       <div className="dashboard-main">
-        <DashboardHeader />
+        <DashboardHeader
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchSuggestions={searchSuggestions}
+          onSuggestionSelect={(suggestion) => {
+            const selected = suggestion.note;
+            if (!selected) return;
+            navigate(`/notes/${selected.workspaceId}/note/${selected.id}`);
+          }}
+        />
         <div className="dashboard-content">
           <div className="notes-header-row">
             <div className="notes-header-left">
@@ -279,7 +372,7 @@ function Notes() {
                       type="button"
                       className="notes-btn-secondary"
                       onClick={() => setSelectionMode(true)}
-                      disabled={notes.length === 0}
+                      disabled={notes.length === 0 || normalizedSearch.length > 0}
                     >
                       Select
                     </button>
@@ -325,7 +418,39 @@ function Notes() {
           )}
 
           <div className="notes-grid">
-            {isWorkspaceView ? (
+            {normalizedSearch ? (
+              filteredNotes.length === 0 ? (
+                <div className="notes-empty">
+                  No notes match "{searchQuery.trim()}".
+                </div>
+              ) : (
+                filteredNotes.map((note) => (
+                  <div
+                    key={note.id}
+                    className={`notes-card notes-card-note ${
+                      (!selectionMode && note.id === selectedNoteId) ? "notes-card-active" : ""
+                    } ${
+                      selectionMode && selectedNoteIds.has(note.id) ? "notes-card-selected" : ""
+                    }`}
+                    onClick={() => {
+                      navigate(`/notes/${note.workspaceId}/note/${note.id}`);
+                    }}
+                  >
+                    <div className="notes-card-icon">
+                      <FileText size={22} />
+                    </div>
+                    <div className="notes-card-text">
+                      <div className="notes-card-title">
+                        {note.title || "Untitled"}
+                      </div>
+                      <div className="notes-card-subtitle">
+                        {note.workspaceName} · Note
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )
+            ) : isWorkspaceView ? (
               workspacesLoading ? (
                 <div className="notes-loading">Loading workspaces…</div>
               ) : workspaces.length === 0 ? (
@@ -336,7 +461,7 @@ function Notes() {
                 workspaces.map((ws) => (
                   <div
                     key={ws.id}
-                    className="notes-card"
+                    className="notes-card notes-card-workspace"
                     onClick={() => handleSelectWorkspace(ws.id)}
                   >
                     <div className="notes-card-icon">
@@ -358,13 +483,21 @@ function Notes() {
                 No notes in this workspace yet. Use “+ Note” to create one.
               </div>
             ) : (
-              notes.map((note) => (
+              filteredNotes.map((note) => (
                 <div
                   key={note.id}
-                  className={`notes-card ${
+                  className={`notes-card notes-card-note ${
                     (!selectionMode && note.id === selectedNoteId) ? "notes-card-active" : ""
+                  } ${
+                    selectionMode && selectedNoteIds.has(note.id) ? "notes-card-selected" : ""
                   }`}
-                  onClick={() => handleSelectNote(note)}
+                  onClick={() => {
+                    if (normalizedSearch) {
+                      navigate(`/notes/${note.workspaceId}/note/${note.id}`);
+                      return;
+                    }
+                    handleSelectNote(note);
+                  }}
                 >
                   <div className="notes-card-icon">
                     <FileText size={22} />
@@ -373,20 +506,10 @@ function Notes() {
                     <div className="notes-card-title">
                       {note.title || "Untitled"}
                     </div>
-                    <div className="notes-card-subtitle">Note</div>
+                    <div className="notes-card-subtitle">
+                      {normalizedSearch ? `${note.workspaceName} · Note` : "Note"}
+                    </div>
                   </div>
-                  {selectionMode && (
-                    <label
-                      className="notes-card-select"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedNoteIds.has(note.id)}
-                        onChange={() => toggleNoteSelected(note.id)}
-                      />
-                    </label>
-                  )}
                 </div>
               ))
             )}
