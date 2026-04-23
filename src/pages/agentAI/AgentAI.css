@@ -199,3 +199,130 @@
   color: #9ca3af;
 }
 
+.agentai-message-col {
+  display: flex;
+  flex-direction: column;
+  max-width: 75%;
+  gap: 6px;
+}
+
+.agentai-message-user .agentai-message-col {
+  align-items: flex-end;
+}
+
+.agentai-message-assistant .agentai-message-col {
+  align-items: flex-start;
+}
+
+.agentai-message-col .agentai-message-bubble {
+  max-width: 100%;
+}
+
+.agentai-message-thinking {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.agentai-citations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.agentai-citation-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(167, 139, 250, 0.45);
+  background: rgba(139, 92, 246, 0.18);
+  color: #ede9fe;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  max-width: 220px;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+
+.agentai-citation-chip:hover {
+  border-color: rgba(167, 139, 250, 0.9);
+  background: rgba(139, 92, 246, 0.3);
+}
+
+.agentai-citation-label {
+  color: #c4b5fd;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+}
+
+.agentai-citation-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+
+.agentai-input-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  align-items: flex-end;
+}
+
+.agentai-input-row textarea {
+  flex: 1;
+  resize: none;
+  background: #111827;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #f3f4f6;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.45;
+  min-height: 42px;
+  max-height: 140px;
+  outline: none;
+}
+
+.agentai-input-row textarea:focus {
+  border-color: rgba(167, 139, 250, 0.75);
+}
+
+.agentai-input-row textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.agentai-send-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.agentai-send-btn:hover:not(:disabled) {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.agentai-send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+

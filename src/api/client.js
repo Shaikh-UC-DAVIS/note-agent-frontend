@@ -148,6 +148,16 @@ export async function fetchNoteInsights(workspaceId, noteId) {
   });
 }
 
+export async function chatWithWorkspace(
+  workspaceId,
+  { question, history = [], topK = 6 } = {}
+) {
+  return apiRequest(`/workspaces/${workspaceId}/chat`, {
+    method: "POST",
+    body: JSON.stringify({ question, history, top_k: topK }),
+  });
+}
+
 export async function fetchTasks({ workspaceId, startDate, endDate } = {}) {
   const params = new URLSearchParams();
 

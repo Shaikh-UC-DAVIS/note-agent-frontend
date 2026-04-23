@@ -1,13 +1,14 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import Sidebar from "../../components/sidebar/Sidebar";
 import DashboardHeader from "../../components/dashboard-header/DashboardHeader";
 import {
+  chatWithWorkspace,
   fetchNoteInsights,
   fetchNotes,
   fetchWorkspaces,
 } from "../../api/client";
-import { FileText } from "lucide-react";
+import { FileText, Send } from "lucide-react";
 import "./AgentAI.css";
 
 const PROMPT_OPTIONS = [
@@ -132,6 +133,7 @@ function summarizeFromInsights(prompt, selectedNotes, insightsByNoteId) {
 
 function AgentAI() {
   const location = useLocation();
+  const navigate = useNavigate();
   const initialState = location.state || {};
 
   const [workspaces, setWorkspaces] = useState([]);
@@ -149,10 +151,13 @@ function AgentAI() {
     {
       id: 0,
       role: "assistant",
-      text: "Select one or more notes, then use a quick prompt below.",
+      text:
+        "Ask me anything about the notes in this workspace — I'll pull the most relevant passages and answer with citations. You can also pick notes + use a quick prompt for fast insight summaries.",
     },
   ]);
   const [sending, setSending] = useState(false);
+  const [inputValue, setInputValue] = useState("");
+  const messagesEndRef = useRef(null);
 
   const selectedNotes = useMemo(
     () => notes.filter((note) => selectedNoteIds.has(note.id)),
@@ -272,6 +277,67 @@ function AgentAI() {
     }
   };
 
+  const sendChat = async () => {
+    const question = inputValue.trim();
+    if (!question || sending || !selectedWorkspaceId) return;
+
+    const userMessage = { id: Date.now(), role: "user", text: question };
+    setMessages((prev) => [...prev, userMessage]);
+    setInputValue("");
+    setSending(true);
+
+    const priorTurns = [...messages, userMessage]
+      .filter((m) => m.role === "user" || m.role === "assistant")
+      .slice(-9, -1)
+      .map((m) => ({ role: m.role, content: m.text || "" }));
+
+    try {
+      const data = await chatWithWorkspace(selectedWorkspaceId, {
+        question,
+        history: priorTurns,
+        topK: 6,
+      });
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          role: "assistant",
+          text: data.answer || "(no answer)",
+          sources: data.sources || [],
+        },
+      ]);
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 2,
+          role: "assistant",
+          text: err.message || "Chat failed.",
+        },
+      ]);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleInputKey = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendChat();
+    }
+  };
+
+  const openSource = (noteId) => {
+    if (!noteId || !selectedWorkspaceId) return;
+    navigate(`/notes/${selectedWorkspaceId}/note/${noteId}`);
+  };
+
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
+  }, [messages, sending]);
+
   const reversedMessages = useMemo(() => messages, [messages]);
 
   return (
@@ -347,33 +413,87 @@ function AgentAI() {
                   key={msg.id}
                   className={`agentai-message agentai-message-${msg.role}`}
                 >
-                  <div className="agentai-message-bubble">
-                    {msg.title && <div className="agentai-section-title">{msg.title}</div>}
-                    {msg.items?.length > 0 ? (
-                      <ul className="agentai-list">
-                        {msg.items.map((item) => (
-                          <li key={`${msg.id}-${item}`}>{item}</li>
-                        ))}
-                      </ul>
-                    ) : msg.groups?.length > 0 ? (
-                      <div className="agentai-group-list">
-                        {msg.groups.map((group) => (
-                          <div key={`${msg.id}-${group.noteTitle}`} className="agentai-group">
-                            <div className="agentai-group-title">{group.noteTitle}</div>
-                            <ul className="agentai-list">
-                              {group.items.map((item) => (
-                                <li key={`${msg.id}-${group.noteTitle}-${item}`}>{item}</li>
-                              ))}
-                            </ul>
-                          </div>
+                  <div className="agentai-message-col">
+                    <div className="agentai-message-bubble">
+                      {msg.title && <div className="agentai-section-title">{msg.title}</div>}
+                      {msg.items?.length > 0 ? (
+                        <ul className="agentai-list">
+                          {msg.items.map((item) => (
+                            <li key={`${msg.id}-${item}`}>{item}</li>
+                          ))}
+                        </ul>
+                      ) : msg.groups?.length > 0 ? (
+                        <div className="agentai-group-list">
+                          {msg.groups.map((group) => (
+                            <div key={`${msg.id}-${group.noteTitle}`} className="agentai-group">
+                              <div className="agentai-group-title">{group.noteTitle}</div>
+                              <ul className="agentai-list">
+                                {group.items.map((item) => (
+                                  <li key={`${msg.id}-${group.noteTitle}-${item}`}>{item}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <span>{msg.text}</span>
+                      )}
+                    </div>
+                    {msg.sources?.length > 0 && (
+                      <div className="agentai-citations">
+                        {msg.sources.map((src) => (
+                          <button
+                            key={`${msg.id}-${src.span_id}`}
+                            type="button"
+                            className="agentai-citation-chip"
+                            title={src.preview || src.note_title || "source"}
+                            onClick={() => openSource(src.note_id)}
+                          >
+                            <span className="agentai-citation-label">S#</span>
+                            <span className="agentai-citation-title">
+                              {src.note_title || "note"}
+                            </span>
+                          </button>
                         ))}
                       </div>
-                    ) : (
-                      <span>{msg.text}</span>
                     )}
                   </div>
                 </div>
               ))}
+              {sending && (
+                <div className="agentai-message agentai-message-assistant">
+                  <div className="agentai-message-col">
+                    <div className="agentai-message-bubble agentai-message-thinking">
+                      Thinking…
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+            <div className="agentai-input-row">
+              <textarea
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={handleInputKey}
+                placeholder={
+                  selectedWorkspaceId
+                    ? "Ask anything about your notes…"
+                    : "Select a workspace to start chatting"
+                }
+                disabled={sending || !selectedWorkspaceId}
+                rows={1}
+              />
+              <button
+                type="button"
+                className="agentai-send-btn"
+                onClick={sendChat}
+                disabled={sending || !selectedWorkspaceId || !inputValue.trim()}
+                aria-label="Send"
+              >
+                <Send size={16} />
+                <span>Send</span>
+              </button>
             </div>
             <p className="agentai-hint">
               Mini Agent AI uses current insights data (ideas, contradictions,
