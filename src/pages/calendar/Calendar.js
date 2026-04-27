@@ -159,12 +159,14 @@ function Calendar() {
 
   const getTasksForWeek = () => {
     const selectedWeek = getWeekForDate(selectedDate);
-    const weekStart = selectedWeek[0];
-    const weekEnd = selectedWeek[6];
+    const weekKeys = selectedWeek.map(formatDateKey);
+    const weekStartKey = weekKeys[0];
+    const weekEndKey = weekKeys[6];
 
     return tasks.filter((task) => {
-      const taskDate = new Date(task.date);
-      return taskDate >= weekStart && taskDate <= weekEnd;
+      if (!task.date) return false;
+      const key = String(task.date).slice(0, 10);
+      return key >= weekStartKey && key <= weekEndKey;
     });
   };
 

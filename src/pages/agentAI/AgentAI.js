@@ -304,6 +304,7 @@ function AgentAI() {
           role: "assistant",
           text: data.answer || "(no answer)",
           sources: data.sources || [],
+          tasks: data.tasks || [],
         },
       ]);
     } catch (err) {
@@ -454,6 +455,32 @@ function AgentAI() {
                               {src.note_title || "note"}
                             </span>
                           </button>
+                        ))}
+                      </div>
+                    )}
+                    {msg.tasks?.length > 0 && (
+                      <div className="agentai-citations">
+                        {msg.tasks.map((t) => (
+                          <span
+                            key={`${msg.id}-${t.task_id}`}
+                            className="agentai-citation-chip"
+                            title={`Status: ${t.status}${t.due_date ? ` · Due ${t.due_date}` : ""}`}
+                            style={{
+                              borderColor: "rgba(74, 222, 128, 0.55)",
+                              background: "rgba(34, 197, 94, 0.18)",
+                              color: "#dcfce7",
+                            }}
+                          >
+                            <span
+                              className="agentai-citation-label"
+                              style={{ color: "#86efac" }}
+                            >
+                              ✓
+                            </span>
+                            <span className="agentai-citation-title">
+                              {t.title} · {t.status}
+                            </span>
+                          </span>
                         ))}
                       </div>
                     )}
