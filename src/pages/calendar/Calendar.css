@@ -374,6 +374,50 @@
   opacity: 0.6;
 }
 
+.task-item.task-status-todo {
+  border-left-color: #5a5a5a;
+}
+
+.task-item.task-status-in_progress {
+  border-left-color: #f59e0b;
+}
+
+.task-item.task-status-done {
+  border-left-color: #22c55e;
+}
+
+.task-status-pill {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid #3a3a3a;
+  background: #1f1f1f;
+  color: #d4d4d4;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+
+.task-status-pill:hover {
+  background: #2c2c2c;
+}
+
+.task-status-pill.task-status-pill-in_progress {
+  border-color: rgba(245, 158, 11, 0.55);
+  background: rgba(245, 158, 11, 0.18);
+  color: #fde68a;
+}
+
+.task-status-pill.task-status-pill-done {
+  border-color: rgba(34, 197, 94, 0.55);
+  background: rgba(34, 197, 94, 0.18);
+  color: #bbf7d0;
+}
+
 .task-item-content {
   display: flex;
   align-items: center;

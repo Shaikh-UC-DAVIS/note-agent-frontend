@@ -106,11 +106,13 @@ function Calendar() {
   };
 
   const normalizeTask = (task) => {
+    const status = task.status || (task.completed ? "done" : "todo");
     return {
       id: task.id,
       title: task.title,
       date: task.due_date || task.date,
-      completed: task.status === "done" || task.completed === true,
+      status,
+      completed: status === "done",
       raw: task,
     };
   };
@@ -226,6 +228,31 @@ function Calendar() {
       setTasksError(err.message || "Failed to update task");
     }
   };
+
+  const cycleStatus = async (taskId) => {
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return;
+    const next =
+      task.status === "todo"
+        ? "in_progress"
+        : task.status === "in_progress"
+        ? "done"
+        : "todo";
+    try {
+      await updateTask(taskId, { status: next });
+      await loadTasks();
+    } catch (err) {
+      console.error("Failed to update task status", err);
+      setTasksError(err.message || "Failed to update task status");
+    }
+  };
+
+  const statusLabel = (status) =>
+    status === "in_progress"
+      ? "In progress"
+      : status === "done"
+      ? "Done"
+      : "To do";
 
   const deleteTask = async (taskId) => {
     try {
@@ -511,7 +538,7 @@ function Calendar() {
                     {weekTasks.map((task) => (
                       <div
                         key={task.id}
-                        className={`task-item ${
+                        className={`task-item task-status-${task.status} ${
                           task.completed ? "completed" : ""
                         }`}
                       >
@@ -521,8 +548,17 @@ function Calendar() {
                             className="task-checkbox"
                             checked={task.completed}
                             onChange={() => toggleTask(task.id)}
+                            title="Mark complete"
                           />
                           <span className="task-title">{task.title}</span>
+                          <button
+                            type="button"
+                            className={`task-status-pill task-status-pill-${task.status}`}
+                            onClick={() => cycleStatus(task.id)}
+                            title="Click to cycle: To do > In progress > Done"
+                          >
+                            {statusLabel(task.status)}
+                          </button>
                         </div>
                         <button
                           className="task-delete-button"
