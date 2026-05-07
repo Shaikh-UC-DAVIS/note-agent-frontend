@@ -2,12 +2,21 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './Sidebar.css';
 import { Home, FileText, Calendar, Upload } from 'lucide-react';
-import { fetchWorkspaces } from '../../api/client';
+import {
+  fetchWorkspaces,
+  getCurrentUserEmail,
+  setCurrentUserEmail,
+  getCurrentUserName,
+  setCurrentUserName,
+  fetchCurrentUser,
+} from '../../api/client';
 
 const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [workspaces, setWorkspaces] = useState([]);
+  const [userEmail, setUserEmail] = useState(getCurrentUserEmail());
+  const [userName, setUserName] = useState(getCurrentUserName());
   const [selectedPdfName, setSelectedPdfName] = useState('');
   const [pdfError, setPdfError] = useState('');
   const [uploadState, setUploadState] = useState('idle'); // idle | uploading | processing | ready | error
@@ -35,6 +44,44 @@ const Sidebar = () => {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    // Always reconcile with /auth/me so users who logged in before the name
+    // columns existed (or whose localStorage was wiped) see the real name.
+    let cancelled = false;
+    (async () => {
+      try {
+        const me = await fetchCurrentUser();
+        if (cancelled || !me) return;
+        if (me.email) {
+          setCurrentUserEmail(me.email);
+          setUserEmail(me.email);
+        }
+        if (me.first_name || me.last_name) {
+          setCurrentUserName({ first_name: me.first_name, last_name: me.last_name });
+          setUserName({ first_name: me.first_name || '', last_name: me.last_name || '' });
+        }
+      } catch {
+        // ignore — sidebar will show fallback label
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const displayName = (() => {
+    const fullName = [userName.first_name, userName.last_name]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+    if (fullName) return fullName;
+    if (userEmail) {
+      const local = userEmail.split('@')[0] || userEmail;
+      return local.charAt(0).toUpperCase() + local.slice(1);
+    }
+    return 'Guest';
+  })();
 
   const handlePdfSelected = (event) => {
     const file = event.target.files?.[0];
@@ -75,9 +122,11 @@ const Sidebar = () => {
         <div className="profile-section">
           <div className="profile-icon"></div>
           <div className="profile-info">
-            <div className="profile-name">Profile Name</div>
-            <div 
-              className="profile-settings" 
+            <div className="profile-name" title={userEmail || ''}>
+              {displayName}
+            </div>
+            <div
+              className="profile-settings"
               onClick={() => navigate('/settings')}
             >
               Settings

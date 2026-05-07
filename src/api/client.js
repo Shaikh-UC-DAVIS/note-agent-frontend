@@ -13,6 +13,35 @@ export function setAccessToken(token) {
   }
 }
 
+export function getCurrentUserEmail() {
+  return localStorage.getItem("user_email") || null;
+}
+
+export function setCurrentUserEmail(email) {
+  if (email) {
+    localStorage.setItem("user_email", email);
+  } else {
+    localStorage.removeItem("user_email");
+  }
+}
+
+export function getCurrentUserName() {
+  const first = localStorage.getItem("user_first_name") || "";
+  const last = localStorage.getItem("user_last_name") || "";
+  return { first_name: first, last_name: last };
+}
+
+export function setCurrentUserName({ first_name, last_name } = {}) {
+  if (first_name) localStorage.setItem("user_first_name", first_name);
+  else localStorage.removeItem("user_first_name");
+  if (last_name) localStorage.setItem("user_last_name", last_name);
+  else localStorage.removeItem("user_last_name");
+}
+
+export async function fetchCurrentUser() {
+  return apiRequest("/auth/me", { method: "GET" });
+}
+
 async function parseJsonSafe(response) {
   const text = await response.text();
   try {
@@ -78,15 +107,21 @@ export async function loginWithPassword(email, password) {
   }
 
   setAccessToken(data.access_token);
+  setCurrentUserEmail(email);
   return data;
 }
 
-export async function registerUser(email, password) {
+export async function registerUser(email, password, { firstName, lastName } = {}) {
   const payload = { email, password };
-  return apiRequest("/auth/register", {
+  if (firstName) payload.first_name = firstName;
+  if (lastName) payload.last_name = lastName;
+  const result = await apiRequest("/auth/register", {
     method: "POST",
     body: JSON.stringify(payload),
   });
+  setCurrentUserEmail(email);
+  setCurrentUserName({ first_name: firstName, last_name: lastName });
+  return result;
 }
 
 export async function fetchWorkspaces() {

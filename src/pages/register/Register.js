@@ -159,7 +159,7 @@ const handleLastNameChange = (e) => {
 
     try {
       setSubmitting(true);
-      await registerUser(email, password);
+      await registerUser(email, password, { firstName, lastName });
       // After successful registration, immediately log in to get a token
       await loginWithPassword(email, password);
       navigate('/dashboard');

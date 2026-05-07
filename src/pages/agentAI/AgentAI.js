@@ -437,20 +437,19 @@ function AgentAI() {
                           ))}
                         </div>
                       ) : (
-                        <span>{msg.text}</span>
+                        <span style={{ whiteSpace: "pre-line" }}>{msg.text}</span>
                       )}
                     </div>
                     {msg.sources?.length > 0 && (
                       <div className="agentai-citations">
                         {msg.sources.map((src) => (
                           <button
-                            key={`${msg.id}-${src.span_id}`}
+                            key={`${msg.id}-${src.note_id || src.span_id}`}
                             type="button"
                             className="agentai-citation-chip"
                             title={src.preview || src.note_title || "source"}
                             onClick={() => openSource(src.note_id)}
                           >
-                            <span className="agentai-citation-label">S#</span>
                             <span className="agentai-citation-title">
                               {src.note_title || "note"}
                             </span>
